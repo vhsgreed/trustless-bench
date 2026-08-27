@@ -1,0 +1,32 @@
+{
+  "run_id": "c55f79ba0fca53f5",
+  "model": "z-ai/glm-5.3",
+  "timestamp": "2026-08-27T17:43:02.540991",
+  "results": [
+    {
+      "benchmark": "humaneval",
+      "score": 0.0,
+      "n_correct": 0,
+      "n_total": 1,
+      "details": [
+        {
+          "qid": "example-humaneval-1",
+          "tests_passed": 0,
+          "total_tests": 2,
+          "all_correct": false,
+          "correct": false,
+          "raw": "```python\ndef has_close_elements(numbers, threshold):\n    for i in range(len(numbers)):\n        for j in range",
+          "code": "def has_close_elements(numbers, threshold):\n    for i in range(len(numbers)):\n        for j in range",
+          "sandbox": {
+            "fatal": "code exec: SyntaxError: expected ':' (<string>, line 3)"
+          }
+        }
+      ],
+      "prompt_hash": "720c5a9cc5b46c11824fe17ef31f7899afbee5e4d49ebc68d8c01708daca51d8",
+      "response_hash": "fc099afa9142520c3d3133599a4d8337a481fc6b0fe8dba1f274820af6715172",
+      "attestation": null
+    }
+  ],
+  "verifiable": true,
+  "verification_method": "deterministic replay + prompt_hash/response_hash integrity + ECDSA attestation"
+}
