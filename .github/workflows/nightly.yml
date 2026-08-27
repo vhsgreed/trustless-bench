@@ -23,6 +23,7 @@ jobs:
           printf '%s' "$OR_KEY" > ~/.openclaw/secrets/openrouter-key
       - name: Run nightly bench (example question set — pipeline health, NOT trusted scores)
         run: |
+          export WORKSPACE="$PWD"   # engine resolves WORKSPACE for db/results; keep them in-repo
           python3 trustless-bench.py --max-models 2
           python3 trustless-bench.py --list | head -8
       - name: Commit results
