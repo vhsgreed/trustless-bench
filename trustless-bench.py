@@ -577,6 +577,49 @@ def verify_run(run_id: str, conn: sqlite3.Connection, live: bool = False) -> boo
     return False
 
 
+def aggregate_model(conn: sqlite3.Connection, model: str) -> None:
+    """Cross-provider aggregation for a model: median, Wilson CI, spread.
+    Phase 2 multi-source: one row per (provider × benchmark); median is
+    robust to outliers; spread > 2×MAD flags suspicious providers."""
+    import math
+    rows = conn.execute(
+        "SELECT provider, benchmark, score, n_questions, n_correct, verified "
+        "FROM runs WHERE model = ? ORDER BY benchmark, provider", (model,)).fetchall()
+    if not rows:
+        print(f"No runs for {model}")
+        return
+    print(f"Aggregation for {model} ({len(rows)} runs)\n")
+    by_bench = {}
+    for provider, bench, score, n_q, n_c, verified in rows:
+        by_bench.setdefault(bench, []).append((provider, score, n_q, n_c, verified))
+    for bench, runs in by_bench.items():
+        scores = sorted(r[1] for r in runs)
+        median = scores[len(scores) // 2] if scores else 0.0
+        # Wilson 95% CI on the median run's question count
+        n = max((r[2] for r in runs if r[2]), default=1)
+        p = median
+        z = 1.96
+        denom = 1 + z * z / n
+        centre = (p + z * z / (2 * n)) / denom
+        half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denom
+        spread = max(scores) - min(scores) if scores else 0.0
+        print(f"{bench}:")
+        print(f"  median {median:.1%}  Wilson95 [{centre - half:.1%}, {centre + half:.1%}]  "
+              f"spread {spread:.1%}  ({len(runs)} providers)")
+        # per-provider breakdown + outlier flag (MAD)
+        med = median
+        mad = sorted(abs(s - med) for s in scores)[len(scores) // 2] if scores else 0
+        for provider, score, n_q, n_c, verified in runs:
+            flag = "  ⚠ OUTLIER" if mad > 0 and abs(score - med) > 2 * mad else ""
+            v = "✓" if verified else " "
+            nq = n_q or 0
+            nc = n_c or 0
+            sc = score or 0.0
+            pv = provider or "openrouter"
+            print(f"    [{v}] {pv:<12} {sc:.1%} ({nc}/{nq}){flag}")
+        print()
+
+
 # ── Queue management ─────────────────────────────────────────────────────
 def load_queue() -> list[dict]:
     if not QUEUE_FILE.exists():
@@ -653,7 +696,13 @@ def publish_result(run_id: str, model: str, results: list[dict]):
 def main():
     parser = argparse.ArgumentParser(description="Trustless benchmark engine")
     parser.add_argument("--model", help="Benchmark specific model")
+    parser.add_argument("--provider", default="openrouter",
+                        help="Provider label for the run (openrouter, together, groq, "
+                             "deepinfra, ollama-compute, ...) — recorded per run for "
+                             "multi-source aggregation (Phase 2)")
     parser.add_argument("--list", action="store_true", help="List previous results")
+    parser.add_argument("--aggregate", metavar="MODEL",
+                        help="Cross-provider aggregation (median, CI, spread) for a model")
     parser.add_argument("--verify", help="Verify a previous run by ID (offline replay)")
     parser.add_argument("--live", action="store_true",
                         help="With --verify: live re-run instead of offline replay")
@@ -671,16 +720,27 @@ def main():
         return
 
     conn = init_db()
+    # schema migration: provider column (Phase 2 multi-source)
+    try:
+        conn.execute("ALTER TABLE runs ADD COLUMN provider TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
 
     if args.list:
         cur = conn.execute(
-            "SELECT run_id, model, benchmark, score, n_correct, n_questions, verified, created_at "
+            "SELECT run_id, model, benchmark, score, n_correct, n_questions, verified, created_at, provider "
             "FROM runs ORDER BY created_at DESC LIMIT 20")
-        print(f"{'Run ID':<10} {'Model':<50} {'Bench':<12} {'Score':>8} {'V':>3}")
-        print("-" * 95)
+        print(f"{'Run ID':<10} {'Model':<42} {'Provider':<12} {'Bench':<11} {'Score':>7} {'V':>3}")
+        print("-" * 100)
         for row in cur.fetchall():
             v = "✓" if row[6] else " "
-            print(f"{row[0]:<10} {row[1]:<50} {row[2]:<12} {row[3]:>7.1%}  {v:>3}")
+            print(f"{row[0]:<10} {row[1]:<42} {(row[8] or 'openrouter'):<12} {row[2]:<11} {row[3]:>6.1%}  {v:>3}")
+        conn.close()
+        return
+
+    if args.aggregate:
+        aggregate_model(conn, args.aggregate)
         conn.close()
         return
 
@@ -726,7 +786,7 @@ def main():
     today = datetime.date.today().isoformat()
 
     for model in models_to_bench:
-        print(f"  [{datetime.datetime.now().strftime('%H:%M:%S')}] {model}")
+        print(f"  [{datetime.datetime.now().strftime('%H:%M:%S')}] {model} (provider={args.provider})")
 
         for bench in ["mmlu-pro", "humaneval"]:
             result = run_benchmark(model, bench, (mmlu, he))
@@ -735,7 +795,7 @@ def main():
                 continue
 
             run_id = hash_content(
-                f"{model}:{bench}:{today}:{datetime.datetime.now().isoformat()}")
+                f"{model}:{provider}:{bench}:{today}:{datetime.datetime.now().isoformat()}")
             score = result["score"]
             p_hash = result.get("prompt_hash", "")
             r_hash = result.get("response_hash", "")
@@ -743,12 +803,12 @@ def main():
             conn.execute(
                 "INSERT OR REPLACE INTO runs "
                 "(run_id, model, benchmark, score, n_questions, n_correct, "
-                " prompt_hash, response_hash, details) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                " prompt_hash, response_hash, details, provider) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (run_id, model, bench, score,
                  result["n_total"], result["n_correct"],
                  p_hash, r_hash,
-                 json.dumps(result.get("details", []))))
+                 json.dumps(result.get("details", [])), provider))
             conn.commit()
 
             print(f"    {bench}: {score:.1%} ({result['n_correct']}/{result['n_total']})"
