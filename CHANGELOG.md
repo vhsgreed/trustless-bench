@@ -1,0 +1,8 @@
+# Changelog
+
+## 1.0.0 (2026-08-27)
+
+
+### Features
+
+* multi-source aggregation — --provider param, provider column, --aggregate (median/Wilson CI/MAD outliers); Phase 2 kickoff ([82f8baa](https://github.com/vhsgreed/trustless-bench/commit/82f8baaeede2d00081c272ee896f7f6fbf3d2977))
