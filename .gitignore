@@ -1,0 +1,13 @@
+# runtime outputs (data, not code)
+benchmarks/results/
+benchmarks/ledger/
+benchmarks/manifest-*.json
+benchmarks/queue.json
+
+# private question set + attestation private key — never commit
+benchmarks/questions.json
+benchmarks/attestation/private.pem
+
+# python
+__pycache__/
+*.pyc

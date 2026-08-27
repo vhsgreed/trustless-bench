@@ -1,0 +1,53 @@
+{
+  "run_id": "2d03f2ff67215938",
+  "model": "deepseek/deepseek-v4-flash",
+  "timestamp": "2026-08-27T12:17:49.751138",
+  "results": [
+    {
+      "benchmark": "humaneval",
+      "score": 0.5,
+      "n_correct": 1,
+      "n_total": 2,
+      "details": [
+        {
+          "qid": "humaneval-1",
+          "tests_passed": 2,
+          "total_tests": 2,
+          "all_correct": true,
+          "correct": true,
+          "raw": "```python\ndef has_close_elements(numbers, threshold):\n    numbers.sort()\n    for i in range(len(numbers) - 1):\n        if numbers[i + 1] - numbers[i] < threshold:\n            return True\n    return False\n```",
+          "code": "def has_close_elements(numbers, threshold):\n    numbers.sort()\n    for i in range(len(numbers) - 1):\n        if numbers[i + 1] - numbers[i] < threshold:\n            return True\n    return False",
+          "sandbox": {
+            "passed": 2,
+            "total": 2,
+            "tests": [
+              {
+                "call": "has_close_elements([1.0, 2.0, 3.0], 0.5)",
+                "got": "False",
+                "expected": "False",
+                "ok": true
+              },
+              {
+                "call": "has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)",
+                "got": "True",
+                "expected": "True",
+                "ok": true
+              }
+            ]
+          }
+        },
+        {
+          "qid": "humaneval-2",
+          "error": "'NoneType' object has no attribute 'strip'",
+          "all_correct": false,
+          "correct": false
+        }
+      ],
+      "prompt_hash": "0fd90bdb0eaf104e8a793d78df664ab869a19a23a0dc27b1c118faea93c35f03",
+      "response_hash": "3aedf73fa4bdc6549ec3ed3ca3aaa0b3253057ab0fd4854c91026c17f1714e34",
+      "attestation": "MEUCIQD1tgs7FgSVsFLmWsFA5vkJIzJghb8IoICWDe/x3NN0owIgMgtOvp+6vZSjanVJJgwrtvxQASpQl41LIiM2kQT+YBI="
+    }
+  ],
+  "verifiable": true,
+  "verification_method": "deterministic replay + prompt_hash/response_hash integrity + ECDSA attestation"
+}

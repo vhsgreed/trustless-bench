@@ -1,0 +1,22 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Syntax check
+        run: python3 -m py_compile trustless-bench.py harness.py tests/test_sandbox.py
+      - name: Sandbox self-test (good + attacks)
+        run: python3 tests/test_sandbox.py
+      - name: Smoke test
+        run: |
+          python3 trustless-bench.py --list | head -3
+          python3 trustless-bench.py --schedule | head -3

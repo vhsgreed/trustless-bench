@@ -1,0 +1,38 @@
+name: nightly-bench
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Write API key
+        env:
+          OR_KEY: ${{ secrets.OR_KEY }}
+        run: |
+          mkdir -p ~/.openclaw/secrets
+          printf '%s' "$OR_KEY" > ~/.openclaw/secrets/openrouter-key
+      - name: Run nightly bench (example question set — pipeline health, NOT trusted scores)
+        run: |
+          python3 trustless-bench.py --max-models 2
+          python3 trustless-bench.py --list | head -8
+      - name: Commit results
+        run: |
+          git config user.name "vhsgreed bot"
+          git config user.email "bot@vhsgreed.github.io"
+          git add -f benchmarks/results benchmarks/ledger benchmarks/manifest-*.json
+          if git diff --cached --quiet; then
+            echo "no new results"
+          else
+            git commit -m "chore: nightly bench results $(date -u +%F)"
+            git push
+          fi

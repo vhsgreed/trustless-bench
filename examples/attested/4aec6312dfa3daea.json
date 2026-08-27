@@ -1,0 +1,69 @@
+{
+  "run_id": "4aec6312dfa3daea",
+  "model": "deepseek/deepseek-v4-flash",
+  "timestamp": "2026-08-27T12:17:30.145663",
+  "results": [
+    {
+      "benchmark": "mmlu-pro",
+      "score": 0.25,
+      "n_correct": 2,
+      "n_total": 8,
+      "details": [
+        {
+          "qid": "mmlu-pro-physics-1",
+          "error": "'NoneType' object has no attribute 'strip'",
+          "correct": false
+        },
+        {
+          "qid": "mmlu-pro-cs-1",
+          "error": "'NoneType' object has no attribute 'strip'",
+          "correct": false
+        },
+        {
+          "qid": "mmlu-pro-math-1",
+          "domain": "mathematics",
+          "expected": "A",
+          "got": "D",
+          "raw": "We need the second derivative",
+          "correct": false
+        },
+        {
+          "qid": "mmlu-pro-bio-1",
+          "error": "'NoneType' object has no attribute 'strip'",
+          "correct": false
+        },
+        {
+          "qid": "mmlu-pro-econ-1",
+          "error": "'NoneType' object has no attribute 'strip'",
+          "correct": false
+        },
+        {
+          "qid": "mmlu-pro-chem-1",
+          "error": "'NoneType' object has no attribute 'strip'",
+          "correct": false
+        },
+        {
+          "qid": "mmlu-pro-stats-1",
+          "domain": "statistics",
+          "expected": "B",
+          "got": "B",
+          "raw": "B",
+          "correct": true
+        },
+        {
+          "qid": "mmlu-pro-law-1",
+          "domain": "law",
+          "expected": "B",
+          "got": "B",
+          "raw": "B",
+          "correct": true
+        }
+      ],
+      "prompt_hash": "18e4b40fb6fabfd3998ffefe6ca221893ae39c61796628874b7ec9caa84d21b3",
+      "response_hash": "be6871d8c35c046830f5df03544ae49e2bd8c84ae29d136a843bca8f4489747e",
+      "attestation": "MEUCIQCz4cma6eCF2VTOmRysmRzZIRPgzjrYTV7BmMLNvVX9cgIgVvUBhByXtu04NsH3IWQhh32UEzTpUeeB/2pZCRZOJdk="
+    }
+  ],
+  "verifiable": true,
+  "verification_method": "deterministic replay + prompt_hash/response_hash integrity + ECDSA attestation"
+}

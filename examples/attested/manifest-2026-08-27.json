@@ -1,0 +1,12 @@
+{
+  "date": "2026-08-27",
+  "nonce": "ddf133a5f2441c6d",
+  "models": [
+    "deepseek/deepseek-v4-flash"
+  ],
+  "question_source": "private questions.json (8 MMLU / 2 HumanEval)",
+  "prompt_hash_mmlu_pro": "18e4b40fb6fabfd3998ffefe6ca221893ae39c61796628874b7ec9caa84d21b3",
+  "prompt_hash_humaneval": "0fd90bdb0eaf104e8a793d78df664ab869a19a23a0dc27b1c118faea93c35f03",
+  "created_at": "2026-08-27T12:16:44.369986",
+  "note": "commitment: question set + models decided BEFORE running. Question content is private; this hash is the public commitment."
+}
