@@ -323,6 +323,24 @@ def paced_request(req, timeout=60, delay=4.0):
 
 
 # ── Benchmark runners ────────────────────────────────────────────────────
+def extract_response_text(resp):
+    """Pull assistant text from an OpenRouter response.
+
+    2026-08-27: reasoning models (z-ai/glm-5.3-flash etc.) return
+    content=null — all budget goes to the `reasoning` field — which made the
+    bench score 0.0 on every question ('NoneType' strip error). Fall back to
+    the reasoning text when content is empty.
+    """
+    try:
+        msg = resp["choices"][0]["message"]
+    except (KeyError, IndexError, TypeError):
+        return ""
+    text = msg.get("content") or ""
+    if not text.strip():
+        text = msg.get("reasoning") or ""
+    return text
+
+
 def run_mmlu_pro(model: str, questions: list) -> dict:
     """Run MMLU-Pro benchmark against a model."""
     key = read_api_key()
@@ -352,7 +370,7 @@ Answer:"""
                 data=json.dumps({
                     "model": model,
                     "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 5,
+                    "max_tokens": 128,
                     "temperature": 0,
                 }).encode(),
                 headers={
@@ -361,7 +379,7 @@ Answer:"""
                 }
             )
             resp = paced_request(req)
-            raw = resp["choices"][0]["message"]["content"]
+            raw = extract_response_text(resp)
             raws.append(raw or "")
             answer = raw.strip().upper()
             for ch in answer:          # extract just the letter
@@ -430,7 +448,7 @@ def run_humaneval(model: str, questions: list) -> dict:
                 }
             )
             resp = paced_request(req)
-            raw = resp["choices"][0]["message"]["content"]
+            raw = extract_response_text(resp)
             raws.append(raw or "")
             code = raw.strip()
             if "```python" in code:       # strip markdown fence
@@ -633,7 +651,11 @@ def save_queue(queue: list[dict]):
 
 
 def pop_next_model() -> Optional[dict]:
-    """Get highest-priority model not yet benchmarked today."""
+    """Get highest-priority model not yet benchmarked today (consumes it).
+
+    2026-08-27: now removes the chosen model from the queue — previously it
+    only filtered by done-today, so --max-models N returned the same model
+    N times (manifest showed glm-5.3-flash twice)."""
     queue = load_queue()
     conn = init_db()
     today = datetime.date.today().isoformat()
@@ -645,7 +667,10 @@ def pop_next_model() -> Optional[dict]:
     conn.close()
     if not available:
         return None
-    return available[0]
+    chosen = available[0]
+    queue.remove(chosen)
+    save_queue(queue)
+    return chosen
 
 
 # ── Publisher ────────────────────────────────────────────────────────────
@@ -784,6 +809,7 @@ def main():
 
     print(f"\nRunning benchmarks on {len(models_to_bench)} model(s)...\n")
     today = datetime.date.today().isoformat()
+    provider = args.provider  # 2026-08-27: was bare `provider` → NameError (Phase 2 regression)
 
     for model in models_to_bench:
         print(f"  [{datetime.datetime.now().strftime('%H:%M:%S')}] {model} (provider={args.provider})")
