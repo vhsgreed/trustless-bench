@@ -1,0 +1,32 @@
+{
+  "run_id": "de47f7afedde74fb",
+  "model": "z-ai/glm-5.3",
+  "timestamp": "2026-08-28T04:13:39.153829",
+  "results": [
+    {
+      "benchmark": "humaneval",
+      "score": 0.0,
+      "n_correct": 0,
+      "n_total": 1,
+      "details": [
+        {
+          "qid": "example-humaneval-1",
+          "tests_passed": 0,
+          "total_tests": 2,
+          "all_correct": false,
+          "correct": false,
+          "raw": "```python\ndef has_close_elements(numbers, threshold):\n    for i in range(len(numbers)):\n        for j in range(i + ",
+          "code": "def has_close_elements(numbers, threshold):\n    for i in range(len(numbers)):\n        for j in range(i +",
+          "sandbox": {
+            "fatal": "code exec: SyntaxError: '(' was never closed (<string>, line 3)"
+          }
+        }
+      ],
+      "prompt_hash": "720c5a9cc5b46c11824fe17ef31f7899afbee5e4d49ebc68d8c01708daca51d8",
+      "response_hash": "7de0e44aed733c2b356784f20b0b9f225aceae72744e9fade3c8ed54c431a426",
+      "attestation": null
+    }
+  ],
+  "verifiable": true,
+  "verification_method": "deterministic replay + prompt_hash/response_hash integrity + ECDSA attestation"
+}
