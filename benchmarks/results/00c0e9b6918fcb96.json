@@ -1,0 +1,32 @@
+{
+  "run_id": "00c0e9b6918fcb96",
+  "model": "z-ai/glm-5.3",
+  "timestamp": "2026-08-28T15:56:27.928905",
+  "results": [
+    {
+      "benchmark": "humaneval",
+      "score": 0.0,
+      "n_correct": 0,
+      "n_total": 1,
+      "details": [
+        {
+          "qid": "example-humaneval-1",
+          "tests_passed": 0,
+          "total_tests": 2,
+          "all_correct": false,
+          "correct": false,
+          "raw": "```python\ndef has_close_elements(numbers, threshold):\n    for i in",
+          "code": "def has_close_elements(numbers, threshold):\n    for i in",
+          "sandbox": {
+            "fatal": "code exec: SyntaxError: invalid syntax (<string>, line 2)"
+          }
+        }
+      ],
+      "prompt_hash": "720c5a9cc5b46c11824fe17ef31f7899afbee5e4d49ebc68d8c01708daca51d8",
+      "response_hash": "7be5a50fe0f242f1206089063928b43aeada4364cbeac48646afee4b981fb895",
+      "attestation": null
+    }
+  ],
+  "verifiable": true,
+  "verification_method": "deterministic replay + prompt_hash/response_hash integrity + ECDSA attestation"
+}

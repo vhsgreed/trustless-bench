@@ -1,0 +1,47 @@
+{
+  "run_id": "3be2dfeb3c4c7306",
+  "model": "z-ai/glm-5.3-flash",
+  "timestamp": "2026-08-28T15:56:03.759159",
+  "results": [
+    {
+      "benchmark": "humaneval",
+      "score": 1.0,
+      "n_correct": 1,
+      "n_total": 1,
+      "details": [
+        {
+          "qid": "example-humaneval-1",
+          "tests_passed": 2,
+          "total_tests": 2,
+          "all_correct": true,
+          "correct": true,
+          "raw": "```python\ndef has_close_elements(numbers, threshold):\n    for i in range(len(numbers)):\n        for j in range(i + 1, len(numbers)):\n            if abs(numbers[i] - numbers[j]) < threshold:\n                return True\n    return False\n```",
+          "code": "def has_close_elements(numbers, threshold):\n    for i in range(len(numbers)):\n        for j in range(i + 1, len(numbers)):\n            if abs(numbers[i] - numbers[j]) < threshold:\n                return True\n    return False",
+          "sandbox": {
+            "passed": 2,
+            "total": 2,
+            "tests": [
+              {
+                "call": "has_close_elements([1.0, 2.0, 3.0], 0.5)",
+                "got": "False",
+                "expected": "False",
+                "ok": true
+              },
+              {
+                "call": "has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)",
+                "got": "True",
+                "expected": "True",
+                "ok": true
+              }
+            ]
+          }
+        }
+      ],
+      "prompt_hash": "720c5a9cc5b46c11824fe17ef31f7899afbee5e4d49ebc68d8c01708daca51d8",
+      "response_hash": "f7a3de58aad73abe4c37a66ffbaf8e72ef5904131d963de14215c39f68855485",
+      "attestation": null
+    }
+  ],
+  "verifiable": true,
+  "verification_method": "deterministic replay + prompt_hash/response_hash integrity + ECDSA attestation"
+}

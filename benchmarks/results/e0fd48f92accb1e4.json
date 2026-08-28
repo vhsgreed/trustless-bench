@@ -1,0 +1,44 @@
+{
+  "run_id": "e0fd48f92accb1e4",
+  "model": "z-ai/glm-5.3-flash",
+  "timestamp": "2026-08-28T15:55:50.719687",
+  "results": [
+    {
+      "benchmark": "mmlu-pro",
+      "score": 1.0,
+      "n_correct": 3,
+      "n_total": 3,
+      "details": [
+        {
+          "qid": "example-mmlu-physics-1",
+          "domain": "physics",
+          "expected": "A",
+          "got": "A",
+          "raw": "A",
+          "correct": true
+        },
+        {
+          "qid": "example-mmlu-cs-1",
+          "domain": "computer_science",
+          "expected": "B",
+          "got": "B",
+          "raw": "B",
+          "correct": true
+        },
+        {
+          "qid": "example-mmlu-math-1",
+          "domain": "mathematics",
+          "expected": "A",
+          "got": "A",
+          "raw": "A",
+          "correct": true
+        }
+      ],
+      "prompt_hash": "979df154a22706368cdac4ef9ffe483c5185f8cdf0249f47efe422284d6de2c0",
+      "response_hash": "3814c41d30b8d801812e0c0f7b6613d7e0a49aace2d9cdb5d2965bcc7249a324",
+      "attestation": null
+    }
+  ],
+  "verifiable": true,
+  "verification_method": "deterministic replay + prompt_hash/response_hash integrity + ECDSA attestation"
+}
