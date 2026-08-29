@@ -1,4 +1,4 @@
-# trustless-bench Phase 2 — On-chain verification via Chainlink CRE
+# trustless-bench Phase 2 — On-chain verification (direct-tx v1, CRE v2)
 
 Design doc. Status: DRAFT (sprint S3, 2026-08-29). Author: agent1,
 review: Karl.
@@ -6,9 +6,11 @@ review: Karl.
 ## Goal
 
 Publish AI evaluation results on-chain so anyone can verify a benchmark
-run without trusting the runner, using Chainlink Runtime Environment
-(CRE) as the transport. Extends Phase 1 (attestable, offline replay) to
-Phase 2 (public, tamper-evident, multi-source).
+run without trusting the runner. v1: direct transactions to a registry
+contract (no external dependencies beyond the chain). v2: Chainlink
+Runtime Environment (CRE) for aggregation at scale. Extends Phase 1
+(attestable, offline replay) to Phase 2 (public, tamper-evident,
+multi-source).
 
 ## Problem being solved
 
@@ -112,10 +114,10 @@ real protection; registration is defense in depth.
 
 ## Testnet plan
 
-1. Deploy BenchRegistry on Chainlink-supported testnet (Sepolia; verify
-   CRE availability + gas).
-2. Wire CRE: run a request that publishes one attestation from a real
-   Phase 1 run (use existing attested run or a fresh small one).
+1. Deploy BenchRegistry on Sepolia testnet (public RPC, faucet ETH).
+   No CRE required for v1.
+2. Publish one real attested Phase 1 run via a direct transaction.
+   (CRE wiring is a v2 task, only for aggregation at scale.)
 3. Verify externally: raw scan of the contract shows runId, score,
    hashes, sig; offline --verify replays to the same score.
 4. Two-runner test: hub + workstation publish the same bench; aggregate
@@ -148,7 +150,7 @@ real protection; registration is defense in depth.
 ```
 trustless-bench/
   contracts/BenchRegistry.sol
-  scripts/publish_cre.js      # CRE request builder
+  scripts/publish_cre.js      # CRE request builder (v2, optional)
   scripts/publish_tx.js       # direct-tx publisher
   scripts/aggregate.js
   docs/phase2-cre.md          # this doc
