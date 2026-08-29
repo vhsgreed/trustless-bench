@@ -122,20 +122,19 @@ real protection; registration is defense in depth.
    returns median; response_hash mismatch case tested (one runner with
    different questions gets excluded).
 
-## Open questions
+## Open questions — RESOLVED (Karl 18:36, agent1 recommendations accepted)
 
-1. Chain: Sepolia first; mainnet later? (Cost: publish is one tx + one
-   CRE request per run; estimate in testnet.)
-2. Do we need runner registration for v1, or self-asserted sigs + median
-   suffice?
-3. Question-set sharing between runners: same questions must be used by
-   all. Secret sets shared out-of-band (private repo / encrypted). How
-   do we prove same set on-chain? Answer: response_hash comparison only
-   proves identical SET if sets are identical; two runners with different
-   secret sets would produce different hashes and be excluded. Acceptable.
-4. CRE vs direct tx: for one runner publishing, a direct tx is simplest.
-   CRE matters for aggregation at scale or for price-feed-style updates.
-   v1 may start direct-tx and add CRE for aggregation.
+1. **Chain: Sepolia testnet first, mainnet later.** PoC proves the
+   mechanism without spend. Mainnet = later decision post-validation.
+2. **Runner registration: self-asserted sigs + median for v1.** No
+   pubkey registry yet; we control all runners. Registration is v2 when
+   untrusted runners join. Median already protects against one bad actor.
+3. **Same question set: response_hash comparison is the proof.**
+   Different secret sets → different hashes → excluded from aggregate.
+   Documented as a known limitation (implicit, not explicit).
+4. **Direct tx for publish; CRE for aggregation at scale.** Plain
+   contract call for one runner publishing. CRE reserved for N > 15 /
+   complex aggregation. v1 = direct tx.
 
 ## Success criteria
 
