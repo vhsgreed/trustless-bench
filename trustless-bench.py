@@ -678,19 +678,53 @@ def save_queue(queue: list[dict]):
     QUEUE_FILE.write_text(json.dumps(queue, indent=2))
 
 
+def _recent_mean(conn, model: str, window_days: int = 14) -> Optional[float]:
+    """Mean score across recent runs for a model (None if no data).
+
+    Unverified runs (verified=0) are excluded: only attested, replayable
+    scores steer the queue. A model that hasn't run in window_days gets
+    None (treated as unknown -> conservative weight)."""
+    cutoff = (datetime.date.today() - datetime.timedelta(days=window_days)).isoformat()
+    row = conn.execute(
+        "SELECT AVG(score) FROM runs WHERE model = ? AND created_at >= ? AND verified = 1",
+        (model, cutoff)).fetchone()
+    return row[0] if row and row[0] is not None else None
+
+
+def _steered_order(queue: list[dict], conn) -> list[dict]:
+    """Order models by static priority blended with recent verified score.
+
+    Blend: 0.7 * normalized static priority + 0.3 * recent mean score.
+    Models with no verified recent score keep their static priority rank
+    (unknown is treated as neutral, not worse). This makes the nightly
+    queue score-steered (bench scores steer which models get benchmarked)
+    without ever dropping a model entirely: rotation still covers all."""
+    def key(m):
+        prio = m.get("priority", 99)
+        prio_norm = 1.0 - (prio / 100.0)  # higher priority -> closer to 1
+        mean = _recent_mean(conn, m["model"])
+        if mean is None:
+            return -prio_norm  # unknown: static rank only (higher priority first)
+        return -(0.7 * prio_norm + 0.3 * mean)
+    return sorted(queue, key=key)
+
+
 def pop_next_model() -> Optional[dict]:
     """Get highest-priority model not yet benchmarked today (consumes it).
 
     2026-08-27: now removes the chosen model from the queue — previously it
     only filtered by done-today, so --max-models N returned the same model
-    N times (manifest showed glm-5.3-flash twice)."""
+    N times (manifest showed glm-5.3-flash twice).
+    2026-08-30: queue order is now score-steered — static priority blended
+    with recent verified mean score (70/30), so high-scoring models get
+    more bench time while unknown models keep static rank."""
     queue = load_queue()
     conn = init_db()
     today = datetime.date.today().isoformat()
     cur = conn.execute(
         "SELECT model FROM runs WHERE created_at >= ?", (today,))
     done_today = {row[0] for row in cur.fetchall()}
-    available = [m for m in sorted(queue, key=lambda x: x["priority"])
+    available = [m for m in _steered_order(queue, conn)
                  if m["model"] not in done_today]
     conn.close()
     if not available:
