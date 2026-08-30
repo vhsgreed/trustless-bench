@@ -351,20 +351,26 @@ def paced_request(req, timeout=60, delay=4.0):
 
 
 # ── Benchmark runners ────────────────────────────────────────────────────
-def extract_response_text(resp):
+def extract_response_text(resp, fallback_to_reasoning=True):
     """Pull assistant text from an OpenRouter response.
 
     2026-08-27: reasoning models (z-ai/glm-5.3-flash etc.) return
     content=null — all budget goes to the `reasoning` field — which made the
     bench score 0.0 on every question ('NoneType' strip error). Fall back to
     the reasoning text when content is empty.
+
+    2026-08-30: reasoning fallback is DANGEROUS for code benchmarks.
+    HumanEval was scoring 0.0 on every run because max_tokens:300 was
+    consumed by reasoning and the truncated scratchpad was used AS code
+    (SyntaxError mid-thought). Fixed: humaneval passes fallback_to_reasoning
+    =False so empty content = honest failed run, not poisoned score.
     """
     try:
         msg = resp["choices"][0]["message"]
     except (KeyError, IndexError, TypeError):
         return ""
     text = msg.get("content") or ""
-    if not text.strip():
+    if not text.strip() and fallback_to_reasoning:
         text = msg.get("reasoning") or ""
     return text
 
@@ -476,7 +482,7 @@ def run_humaneval(model: str, questions: list) -> dict:
                 }
             )
             resp = paced_request(req)
-            raw = extract_response_text(resp)
+            raw = extract_response_text(resp, fallback_to_reasoning=False)  # 08-30: never use truncated scratchpad as code
             raws.append(raw or "")
             code = raw.strip()
             if "```python" in code:       # strip markdown fence

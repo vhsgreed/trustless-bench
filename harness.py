@@ -9,11 +9,31 @@ Reads the model's generated code + JSON test cases, execs the code in a
 fresh namespace, evaluates each test case, prints a JSON result line.
 """
 import json
+import re
 import sys
 
 
+def strip_fences(code: str) -> str:
+    """Remove markdown code fences + surrounding whitespace from model output.
+
+    Models almost always wrap generated code in ```python ... ``` fences;
+    exec'ing the raw text fails with SyntaxError on the fence line (observed
+    08-30: all 3 humaneval 0.0 runs were fence-SyntaxErrors, not model
+    failures). Strip a leading ```lang line and trailing ``` if present,
+    then trim surrounding blank lines. Leave the code itself untouched.
+    """
+    text = code.strip()
+    m = re.match(r"^```[a-zA-Z0-9_+-]*\s*\n", text)
+    if m:
+        text = text[m.end():]
+        # trailing fence (allow trailing whitespace)
+        text = re.sub(r"\n?```\s*$", "", text)
+    return text.strip()
+
+
 def main() -> None:
-    code = open(sys.argv[1]).read()
+    raw_code = open(sys.argv[1]).read()
+    code = strip_fences(raw_code)
     tests = json.load(open(sys.argv[2]))
     ns: dict = {}
     try:
