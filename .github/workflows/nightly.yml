@@ -21,11 +21,31 @@ jobs:
         run: |
           mkdir -p ~/.openclaw/secrets
           printf '%s' "$OR_KEY" > ~/.openclaw/secrets/openrouter-key
+      - name: Write CI attestation key (signs runs in CI; pub key committed as attestation/ci-public.pem)
+        env:
+          CI_ATTEST_PRIV: ${{ secrets.CI_ATTEST_PRIV }}
+        run: |
+          mkdir -p benchmarks/attestation
+          if [ -n "$CI_ATTEST_PRIV" ]; then
+            printf '%s' "$CI_ATTEST_PRIV" | base64 -d > benchmarks/attestation/private.pem
+            cp attestation/ci-public.pem benchmarks/attestation/public.pem
+            chmod 600 benchmarks/attestation/private.pem
+            echo "CI attestation key written"
+          else
+            echo "no CI_ATTEST_PRIV secret — runs will be unsigned (attestation: None)"
+          fi
       - name: Run nightly bench (example question set — pipeline health, NOT trusted scores)
         run: |
           export WORKSPACE="$PWD"   # engine resolves WORKSPACE for db/results; keep them in-repo
           python3 trustless-bench.py --max-models 2
           python3 trustless-bench.py --list | head -8
+      - name: Verify + attest today's runs (sets verified=1 for CRE-pushable rows)
+        run: |
+          export WORKSPACE="$PWD"
+          for run_id in $(ls benchmarks/results/*.json 2>/dev/null | sed 's|.*/||; s|\.json||' | sort -u); do
+            echo "== verifying $run_id =="
+            python3 trustless-bench.py --verify "$run_id" || true
+          done
       - name: Push attested run to CRE oracle (pre-wired, activates when CRE_PUSH_URL secret lands)
         if: ${{ secrets.CRE_PUSH_URL != '' }}
         env:

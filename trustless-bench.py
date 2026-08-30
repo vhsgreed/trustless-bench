@@ -58,7 +58,9 @@ BENCH_DB = WORKSPACE / "benchmarks" / "trustless.db"
 RESULTS_DIR = WORKSPACE / "benchmarks" / "results"
 QUEUE_FILE = WORKSPACE / "benchmarks" / "queue.json"
 QUESTIONS_FILE = WORKSPACE / "benchmarks" / "questions.json"   # PRIVATE, gitignored
-ATTEST_DIR = WORKSPACE / "benchmarks" / "attestation"
+# Attestation dir is env-overridable so CI can point at a secret-mounted key
+# without committing private.pem. Default: <WORKSPACE>/benchmarks/attestation.
+ATTEST_DIR = Path(os.environ.get("ATTEST_DIR", WORKSPACE / "benchmarks" / "attestation"))
 ATTEST_PRIV = ATTEST_DIR / "private.pem"                       # 0600, gitignored
 ATTEST_PUB = ATTEST_DIR / "public.pem"                         # committed to repo
 OPENROUTER_KEY_PATH = os.path.expanduser(
