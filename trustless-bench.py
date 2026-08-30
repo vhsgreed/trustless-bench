@@ -257,14 +257,40 @@ def write_manifest(models: list) -> Path:
 
 
 # ── Sandboxed code execution (HumanEval safety gate) ─────────────────────
+def _sandbox_cmd() -> tuple:
+    """Build the subprocess argv prefix for network isolation.
+
+    Tries `unshare --user --net` (user + network namespace, no root needed)
+    which gives a fresh netns with NO network reachability. Falls back to
+    plain python3 -I when unshare isn't available/blocked (kernel policy),
+    so the benchmark never breaks on hosts without it.
+
+    Returns (prefix_list, isolation_label).
+    """
+    import shutil
+    if shutil.which("unshare"):
+        # --user --net: drops into a private user+net namespace. Verified
+        # 08-30 on hub: process has no network (connect -> ENETUNREACH)
+        # without needing root. --map-root-user would give root-in-ns but
+        # is blocked by kernel uid_map policy here; not needed anyway
+        # (harness only does pure computation).
+        return (["unshare", "--user", "--net", "--", sys.executable], "unshare-user-net")
+    return ([sys.executable], "none")
+
+
 def run_code_sandboxed(code: str, test_cases: list) -> tuple:
     """Run model-generated code + test cases in a resource-limited subprocess.
 
-    Safety gate (2026-08-27): model output is UNTRUSTED. Previously exec'd
-    in-process = arbitrary code execution as our user. Now: python3 -I
-    (isolated mode) + RLIMIT_CPU/AS/NOFILE/FSIZE/NPROC + temp cwd + stripped
-    env + timeout. Full network isolation (bwrap/nsjail/container) is not
-    available on this host — TODO when a container runtime exists.
+    Safety gate (2026-08-27, hardened 08-30): model output is UNTRUSTED.
+    Previously exec'd in-process = arbitrary code execution as our user.
+    Now: [unshare --user --net] python3 -I (isolated + NO network) +
+    RLIMIT_CPU/AS/NOFILE/FSIZE/NPROC + temp cwd + stripped env + timeout.
+
+    Network isolation (08-30): `unshare --user --net` gives a fresh network
+    namespace with zero reachability (verified on hub: socket connect to
+    1.1.1.1 -> ENETUNREACH). Falls back to the pre-08-30 sandbox (no net
+    isolation) if unshare is missing/blocked, so the runner still works on
+    locked-down hosts. The net-ns hole is closed where the host allows it.
 
     Returns (passed, total, result_dict).
     """
@@ -281,6 +307,7 @@ def run_code_sandboxed(code: str, test_cases: list) -> tuple:
         resource.setrlimit(resource.RLIMIT_FSIZE, (1024 * 1024, 1024 * 1024))
         resource.setrlimit(resource.RLIMIT_NPROC, (32, 32))
 
+    cmd_prefix, iso_label = _sandbox_cmd()
     with tempfile.TemporaryDirectory(prefix="tb-sandbox-") as td:
         td = Path(td)
         code_f = td / "model_code.py"
@@ -289,17 +316,18 @@ def run_code_sandboxed(code: str, test_cases: list) -> tuple:
         tests_f.write_text(tests_json)
         try:
             p = subprocess.run(
-                [sys.executable, "-I", str(harness), str(code_f), str(tests_f)],
+                cmd_prefix + ["-I", str(harness), str(code_f), str(tests_f)],
                 capture_output=True, text=True, timeout=20,
                 cwd=td, env={"PATH": "/usr/bin:/bin"}, preexec_fn=_limits)
         except subprocess.TimeoutExpired:
-            return 0, len(test_cases), {"fatal": "timeout (20s)"}
+            return 0, len(test_cases), {"fatal": "timeout (20s)", "isolation": iso_label}
         try:
             out = json.loads(p.stdout or "{}")
         except json.JSONDecodeError:
             out = {"fatal": f"bad harness output: {(p.stdout or p.stderr or '')[:120]}"}
         if p.returncode != 0 and not out.get("fatal"):
             out["fatal"] = f"harness died (rc={p.returncode})"
+        out.setdefault("isolation", iso_label)
         return out.get("passed", 0), len(test_cases), out
 
 

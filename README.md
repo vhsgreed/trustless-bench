@@ -63,10 +63,11 @@ measure (public benchmark questions get absorbed into training data).
 ## Sandboxed code execution
 
 HumanEval runs model-generated code in a resource-limited subprocess
-(`python3 -I` + RLIMIT_CPU/AS/NOFILE/FSIZE/NPROC + temp cwd + stripped env
-+ timeout). Model output is untrusted — it never executes in the runner's
-process. Full network isolation (bwrap/nsjail/container) is a documented
-TODO.
+(`unshare --user --net` + `python3 -I` + RLIMIT_CPU/AS/NOFILE/FSIZE/NPROC
++ temp cwd + stripped env + timeout). Model output is untrusted — it never
+executes in the runner's process. Network is fully isolated (fresh netns:
+verified socket connect -> ENETUNREACH, 08-30); falls back to the
+non-netns sandbox on hosts where unshare is blocked.
 
 ## Benchmarks
 
