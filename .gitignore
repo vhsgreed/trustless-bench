@@ -11,3 +11,7 @@ benchmarks/attestation/private.pem
 # python
 __pycache__/
 *.pyc
+
+# foundry artifacts (contracts mirror)
+cache/
+out/

@@ -34,7 +34,7 @@ jobs:
           else
             echo "no CI_ATTEST_PRIV secret — runs will be unsigned (attestation: None)"
           fi
-      - name: Run nightly bench (example question set — pipeline health, NOT trusted scores)
+      - name: Run nightly bench (ships questions.public.json — tinyMMLU 100, real public set, NOT trusted scores)
         run: |
           export WORKSPACE="$PWD"   # engine resolves WORKSPACE for db/results; keep them in-repo
           python3 trustless-bench.py --max-models 2

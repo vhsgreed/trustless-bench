@@ -32,7 +32,8 @@ import sys
 import urllib.error
 import urllib.request
 
-WORKSPACE = os.environ.get("WORKSPACE", os.path.expanduser("~/.openclaw/workspace"))
+WORKSPACE = os.environ.get("WORKSPACE",
+                           os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BENCH_DB = os.path.join(WORKSPACE, "benchmarks", "trustless.db")
 
 # Model name → canonical slug used in workflow reports (keep in sync with

@@ -54,10 +54,22 @@ API key: `~/.openclaw/secrets/openrouter-key` or env `OR_KEY_FILE`.
 ## Question sets (private by design)
 
 The real question set lives in `benchmarks/questions.json` (gitignored) —
-only its SHA-256 commitment is public. The repo ships a small **example
-question set** (embedded in `trustless-bench.py`) so the public engine runs
-for CI/nightly/demo. Example-set results are labeled as such and are **not**
-trusted scores. Secret questions also double as an anti-contamination
+only its SHA-256 commitment is public. The repo also ships a **public
+question set** (`benchmarks/questions.public.json`, 100-question tinyMMLU
+subset, MIT licensed, source: tinyBenchmarks/tinyMMLU on Hugging Face,
+citation: Polo et al. 2024 arXiv:2402.14992) so CI/nightly/demo runs use a
+REAL public benchmark instead of hand-written examples.
+
+Load order: `questions.json` (private, trusted) → `questions.public.json`
+(shipped, public, NOT contamination-free) → inline examples (demo only).
+Public/example-set results are labeled as such and are **not** trusted
+scores; private-set results are. Regenerate the public set anytime with:
+
+```bash
+python3 scripts/fetch-public-questions.py
+```
+
+Secret questions also double as an anti-contamination
 measure (public benchmark questions get absorbed into training data).
 
 ## Sandboxed code execution

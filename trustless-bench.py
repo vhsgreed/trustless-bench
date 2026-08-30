@@ -53,11 +53,13 @@ import time
 from pathlib import Path
 from typing import Optional
 
-WORKSPACE = Path(os.environ.get("WORKSPACE", os.path.expanduser("~/.openclaw/workspace")))
+WORKSPACE = Path(os.environ.get("WORKSPACE",
+                                os.path.dirname(os.path.abspath(__file__))))
 BENCH_DB = WORKSPACE / "benchmarks" / "trustless.db"
 RESULTS_DIR = WORKSPACE / "benchmarks" / "results"
 QUEUE_FILE = WORKSPACE / "benchmarks" / "queue.json"
 QUESTIONS_FILE = WORKSPACE / "benchmarks" / "questions.json"   # PRIVATE, gitignored
+PUBLIC_QUESTIONS_FILE = WORKSPACE / "benchmarks" / "questions.public.json"  # shipped, MIT tinyMMLU
 # Attestation dir is env-overridable so CI can point at a secret-mounted key
 # without committing private.pem. Default: <WORKSPACE>/benchmarks/attestation.
 ATTEST_DIR = Path(os.environ.get("ATTEST_DIR", WORKSPACE / "benchmarks" / "attestation"))
@@ -70,7 +72,7 @@ OPENROUTER_KEY_PATH = os.path.expanduser(
 DEFAULT_QUEUE = [
     {"model": "z-ai/glm-5.3-flash", "priority": 1, "added": "2026-08-26"},
     {"model": "z-ai/glm-5.3", "priority": 1, "added": "2026-08-26"},
-    {"model": "mistralai/mistral-small-3.1-24b", "priority": 2, "added": "2026-08-26"},
+    {"model": "mistralai/mistral-small-3.1-24b-instruct", "priority": 2, "added": "2026-08-26"},
     {"model": "google/gemma-4-31b-it:free", "priority": 2, "added": "2026-08-26"},
     {"model": "qwen/qwen3.8-27b", "priority": 2, "added": "2026-08-26"},
     {"model": "nvidia/nemotron-3-ultra-550b-a55b:free", "priority": 3, "added": "2026-08-26"},
@@ -119,7 +121,9 @@ EXAMPLE_HUMANEVAL_QUESTIONS = [
 
 
 def load_questions() -> tuple:
-    """Load question sets. Private questions.json wins; else example set.
+    """Load question sets. Private questions.json wins; else the shipped
+    public set (benchmarks/questions.public.json, MIT tinyMMLU); else the
+    inline example set (public demo).
 
     Returns (mmlu_pro_questions, humaneval_questions, source_label).
     """
@@ -128,7 +132,13 @@ def load_questions() -> tuple:
         return (q.get("mmlu_pro", EXAMPLE_MMLU_PRO_QUESTIONS),
                 q.get("humaneval", EXAMPLE_HUMANEVAL_QUESTIONS),
                 f"private questions.json ({len(q.get('mmlu_pro', []))} MMLU / "
-                f"{len(q.get('humaneval', []))} HumanEval)")
+                f"{len(q.get('humaneval', []))} HumanEval) — trusted scores")
+    if PUBLIC_QUESTIONS_FILE.exists():
+        q = json.loads(PUBLIC_QUESTIONS_FILE.read_text())
+        return (q.get("mmlu_pro", EXAMPLE_MMLU_PRO_QUESTIONS),
+                q.get("humaneval", EXAMPLE_HUMANEVAL_QUESTIONS),
+                f"questions.public.json ({len(q.get('mmlu_pro', []))} MMLU tinyMMLU) — "
+                f"public set, NOT contamination-free")
     return (EXAMPLE_MMLU_PRO_QUESTIONS, EXAMPLE_HUMANEVAL_QUESTIONS,
             "EXAMPLE questions (public demo set — NOT trusted scores)")
 
