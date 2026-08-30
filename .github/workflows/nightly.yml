@@ -26,6 +26,14 @@ jobs:
           export WORKSPACE="$PWD"   # engine resolves WORKSPACE for db/results; keep them in-repo
           python3 trustless-bench.py --max-models 2
           python3 trustless-bench.py --list | head -8
+      - name: Push attested run to CRE oracle (pre-wired, activates when CRE_PUSH_URL secret lands)
+        if: ${{ secrets.CRE_PUSH_URL != '' }}
+        env:
+          WORKSPACE: ${{ github.workspace }}
+          CRE_PUSH_URL: ${{ secrets.CRE_PUSH_URL }}
+        run: |
+          echo "CRE_PUSH_URL found — pushing latest attested run"
+          python3 scripts/cre-push.py --json || echo "cre-push exit $? (see above; no attested run to push is normal on fresh DB)"
       - name: Commit results
         run: |
           git config user.name "vhsgreed bot"
