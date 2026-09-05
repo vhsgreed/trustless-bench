@@ -97,3 +97,7 @@ non-netns sandbox on hosts where unshare is blocked.
 ## License
 
 MIT © 2026 vhsgreed
+
+## Links
+
+Part of the [vhsgreed](https://vhsgreed.win) toolset: data, code, and methods in the open.
